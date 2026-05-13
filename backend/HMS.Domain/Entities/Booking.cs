@@ -14,6 +14,7 @@ public class Booking
     public decimal TotalAmount { get; set; }
     public decimal CancellationFee { get; set; }
     public string Notes { get; set; } = string.Empty;
+    public int GuestCount { get; set; } = 1;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public int? CreatedByStaffId { get; set; }
 

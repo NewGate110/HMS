@@ -16,6 +16,7 @@ public class BookingDto
     public decimal TotalAmount { get; set; }
     public decimal CancellationFee { get; set; }
     public string Notes { get; set; } = string.Empty;
+    public int GuestCount { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<RoomDto> Rooms { get; set; } = new();
     public List<BookingServiceDto> Services { get; set; } = new();

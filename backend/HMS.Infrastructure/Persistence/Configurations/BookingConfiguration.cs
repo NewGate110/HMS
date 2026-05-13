@@ -16,6 +16,7 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.Property(b => b.TotalAmount).HasColumnType("decimal(10,2)");
         builder.Property(b => b.CancellationFee).HasColumnType("decimal(10,2)");
         builder.Property(b => b.Notes).HasMaxLength(1000);
+        builder.Property(b => b.GuestCount).IsRequired().HasDefaultValue(1);
 
         builder.HasOne(b => b.Guest)
                .WithMany(g => g.Bookings)

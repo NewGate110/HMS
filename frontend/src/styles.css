@@ -1,1 +1,48 @@
-/* You can add global styles to this file, and also import other style files */
+@import 'tailwindcss';
+@import '@angular/material/prebuilt-themes/azure-blue.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+  --color-gp-surface: oklch(99% 0.002 264);
+  --color-gp-muted: oklch(96% 0.008 264);
+  --color-gp-border: oklch(90% 0.02 264);
+  --color-gp-accent: oklch(52% 0.14 264);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  @apply bg-neutral-50 text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100;
+}
+
+.mat-mdc-snack-bar-container.gp-snackbar-error {
+  --mdc-snackbar-container-color: oklch(45% 0.18 25);
+  --mat-snack-bar-button-color: #fff;
+}
+
+.mat-mdc-snack-bar-container.gp-snackbar-success {
+  --mdc-snackbar-container-color: oklch(42% 0.12 155);
+  --mat-snack-bar-button-color: #fff;
+}
+
+:focus-visible {
+  @apply outline-none ring-2 ring-blue-600 ring-offset-2 ring-offset-white dark:ring-offset-neutral-950 dark:ring-blue-400;
+}
+
+.cal-unavailable {
+  background-color: oklch(95% 0.03 25);
+  border-radius: 50%;
+  position: relative;
+}
+
+.cal-unavailable .mat-calendar-body-cell-content {
+  color: oklch(55% 0.15 25);
+  text-decoration: line-through;
+}

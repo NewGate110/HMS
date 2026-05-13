@@ -9,6 +9,7 @@ public class CreateBookingDto
     public List<int> RoomIds { get; set; } = new();
     public List<BookingServiceRequestDto> Services { get; set; } = new();
     public string Notes { get; set; } = string.Empty;
+    public int GuestCount { get; set; } = 1;
 }
 
 public class BookingServiceRequestDto

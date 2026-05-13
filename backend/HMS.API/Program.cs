@@ -13,24 +13,35 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ── JWT authentication ─────────────────────────────────────────────────────
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var jwtKey     = jwtSection["Key"] ?? throw new InvalidOperationException("Jwt:Key not configured.");
+var jwtKey = jwtSection["Key"] ?? throw new InvalidOperationException("Jwt:Key not configured.");
+
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile(
+        $"appsettings.{builder.Environment.EnvironmentName}.json",
+        optional: true,
+        reloadOnChange: true)
+    .AddJsonFile(
+        "appsettings.Local.json",
+        optional: true,
+        reloadOnChange: true);
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-            options.MapInboundClaims = false;   // keep claim names as-is ("role", "sub", etc.)
+        options.MapInboundClaims = false;   // keep claim names as-is ("role", "sub", etc.)
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer           = true,
-            ValidateAudience         = true,
-            ValidateLifetime         = true,
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer              = jwtSection["Issuer"]   ?? "HMS",
-            ValidAudience            = jwtSection["Audience"] ?? "HMS",
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-            RoleClaimType            = "role",
-            NameClaimType            = "sub",
+            ValidIssuer = jwtSection["Issuer"] ?? "HMS",
+            ValidAudience = jwtSection["Audience"] ?? "HMS",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            RoleClaimType = "role",
+            NameClaimType = "sub",
         };
     });
 

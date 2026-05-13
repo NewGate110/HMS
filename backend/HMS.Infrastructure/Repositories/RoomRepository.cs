@@ -41,6 +41,66 @@ public class RoomRepository : IRoomRepository
             .OrderBy(r => r.FloorNumber).ThenBy(r => r.RoomNumber)
             .ToListAsync();
 
+    /// <summary>
+    /// Cross-hotel search. Excludes OutOfService rooms and rooms with non-cancelled overlapping bookings.
+    /// Unlike GetAvailableRoomsAsync, does not restrict to Status==Available — Cleaning rooms are
+    /// still bookable for future dates.
+    /// </summary>
+    public async Task<IEnumerable<Room>> SearchRoomsAsync(
+        string? location, DateTime? checkIn, DateTime? checkOut,
+        int? guests, RoomType? roomType, decimal? minPrice, decimal? maxPrice)
+    {
+        var query = _db.Rooms
+            .Include(r => r.Hotel)
+            .Where(r => r.Status != RoomStatus.OutOfService && r.Hotel.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(location))
+        {
+            var loc = location.Trim().ToLower();
+            query = query.Where(r =>
+                r.Hotel.City.ToLower().Contains(loc) ||
+                r.Hotel.Name.ToLower().Contains(loc) ||
+                r.Hotel.Address.ToLower().Contains(loc));
+        }
+
+        if (checkIn.HasValue && checkOut.HasValue)
+        {
+            query = query.Where(r => !r.BookingRooms.Any(br =>
+                br.Booking.Status != BookingStatus.Cancelled &&
+                br.Booking.CheckInDate  < checkOut.Value &&
+                br.Booking.CheckOutDate > checkIn.Value));
+        }
+
+        if (guests.HasValue)
+            query = query.Where(r => r.Capacity >= guests.Value);
+
+        if (roomType.HasValue)
+            query = query.Where(r => r.Type == roomType.Value);
+
+        if (minPrice.HasValue)
+            query = query.Where(r => r.PriceOffPeak >= minPrice.Value);
+
+        if (maxPrice.HasValue)
+            query = query.Where(r => r.PriceOffPeak <= maxPrice.Value);
+
+        return await query
+            .OrderBy(r => r.Hotel.Name)
+            .ThenBy(r => r.PriceOffPeak)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<(DateTime From, DateTime To)>> GetUnavailableDatesAsync(int roomId)
+    {
+        var cutoff = DateTime.UtcNow.Date;
+        var rows = await _db.BookingRooms
+            .Where(br => br.RoomId == roomId
+                      && br.Booking.Status != BookingStatus.Cancelled
+                      && br.Booking.CheckOutDate > cutoff)
+            .Select(br => new { From = br.Booking.CheckInDate, To = br.Booking.CheckOutDate })
+            .ToListAsync();
+        return rows.Select(r => (r.From.Date, r.To.Date));
+    }
+
     public async Task UpdateAsync(Room room)
     {
         _db.Rooms.Update(room);

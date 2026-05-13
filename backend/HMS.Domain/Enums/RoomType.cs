@@ -6,5 +6,13 @@ public enum RoomType
     StandardDouble,
     DeluxeKing,
     FamilySuite,
-    Penthouse
+
+    // Resort Villas
+    BeachVilla,
+    WaterVilla,
+    OverwaterBungalow,
+    HoneymoonVilla,
+
+    // Premium Luxury
+    PresidentialVilla
 }

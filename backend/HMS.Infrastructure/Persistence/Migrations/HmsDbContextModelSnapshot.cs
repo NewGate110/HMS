@@ -127,6 +127,11 @@ namespace HMS.Infrastructure.Persistence.Migrations
                     b.Property<int?>("CreatedByStaffId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("GuestCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
                     b.Property<int>("GuestId")
                         .HasColumnType("integer");
 

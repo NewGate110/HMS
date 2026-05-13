@@ -481,3 +481,10 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+appsettings.Local.json
+.local/
+
+.agents/
+.claude/
+skills-lock.json

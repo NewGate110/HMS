@@ -77,6 +77,9 @@ public class BookingManagementService : IBookingService
         if (!dto.RoomIds.Any())
             throw new InvalidOperationException("At least one room must be selected.");
 
+        if (dto.GuestCount < 1)
+            throw new InvalidOperationException("Guest count must be at least 1.");
+
         var nights = (dto.CheckOutDate.Date - dto.CheckInDate.Date).Days;
 
         // ── Availability guard ────────────────────────────────────────────────
@@ -91,6 +94,11 @@ public class BookingManagementService : IBookingService
                     $"Room {roomId} is not available for the requested dates.");
         }
 
+        var totalCapacity = dto.RoomIds.Sum(id => availableRooms[id].Capacity);
+        if (dto.GuestCount > totalCapacity)
+            throw new InvalidOperationException(
+                $"Guest count ({dto.GuestCount}) exceeds the total capacity ({totalCapacity}) of the selected room(s).");
+
         // ── Build booking ─────────────────────────────────────────────────────
         var booking = new Booking
         {
@@ -100,6 +108,7 @@ public class BookingManagementService : IBookingService
             CheckOutDate = dto.CheckOutDate.Date,
             Status       = BookingStatus.Confirmed,
             Notes        = dto.Notes,
+            GuestCount   = dto.GuestCount,
             CreatedAt    = DateTime.UtcNow,
         };
 
