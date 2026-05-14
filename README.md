@@ -1,7 +1,4 @@
 GRAND PLAZA - HOTEL MANAGEMENT SYSTEM (HMS)
-
-Module: UFCF8S-30-2 Advanced Software Development
-Academic Context: University of the West of England (UWE)
 Tech Stack: .NET 10 / Angular 21 / PostgreSQL 18.3 / Docker
 
 PROJECT OVERVIEW
@@ -57,7 +54,7 @@ Command: docker-compose up -d
 cd HMS.API
 dotnet run
 
-- Swagger UI: https://localhost:5001/swagger
+- Swagger UI: http://localhost:5101/swagger/index.html
 
 3. Frontend Setup
    Commands:
@@ -109,12 +106,6 @@ TESTING
 
 - Backend: Run "dotnet test" from the backend folder.
 - Frontend: Run "ng test" from the frontend folder.
-
-AUTHORS
-
-- Student Name: [Your Name]
-- Student ID: [Your Student ID]
-- Module: UFCF8S-30-2 Advanced Software Development
 
 
 test user.
