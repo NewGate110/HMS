@@ -18,14 +18,16 @@ export class RoomsApiService {
     checkIn: string;
     checkOut: string;
     minCapacity?: number;
+    minPrice?: number;
+    maxPrice?: number;
   }): Observable<RoomDto[]> {
     let hp = new HttpParams()
       .set('hotelId', String(params.hotelId))
       .set('checkIn', params.checkIn)
       .set('checkOut', params.checkOut);
-    if (params.minCapacity != null) {
-      hp = hp.set('minCapacity', String(params.minCapacity));
-    }
+    if (params.minCapacity != null) hp = hp.set('minCapacity', String(params.minCapacity));
+    if (params.minPrice    != null) hp = hp.set('minPrice',    String(params.minPrice));
+    if (params.maxPrice    != null) hp = hp.set('maxPrice',    String(params.maxPrice));
     return this.http.get<RoomDto[]>(`${this.base}/available`, { params: hp });
   }
 

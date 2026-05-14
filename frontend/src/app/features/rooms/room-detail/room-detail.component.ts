@@ -18,6 +18,7 @@ import { AppCardComponent } from '../../../shared/ui/app-card/app-card.component
 import { AppLoaderComponent } from '../../../shared/ui/app-loader/app-loader.component';
 import { AppBadgeComponent } from '../../../shared/ui/app-badge/app-badge.component';
 import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.component';
+import { FormatTypePipe } from '../../../shared/pipes/format-type.pipe';
 
 @Component({
   selector: 'app-room-detail',
@@ -33,6 +34,7 @@ import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.com
     AppLoaderComponent,
     AppBadgeComponent,
     AppButtonComponent,
+    FormatTypePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -49,7 +51,7 @@ import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.com
                 <p class="text-sm text-zinc-500">{{ r.hotelName }}</p>
                 <h1 class="text-3xl font-semibold tracking-tight">Room {{ r.roomNumber }}</h1>
                 <div class="mt-2 flex flex-wrap gap-2">
-                  <app-badge tone="info">{{ formatType(r.type) }}</app-badge>
+                  <app-badge tone="info">{{ r.type | formatType }}</app-badge>
                   <app-badge>{{ r.status }}</app-badge>
                 </div>
               </div>
@@ -334,7 +336,7 @@ import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.com
                   <div class="rounded-xl bg-zinc-50 p-4 text-sm space-y-2">
                     <div class="flex justify-between text-zinc-600">
                       <span>Room</span>
-                      <span class="font-medium">{{ r.roomNumber }} · {{ formatType(r.type) }}</span>
+                      <span class="font-medium">{{ r.roomNumber }} · {{ r.type | formatType }}</span>
                     </div>
                     <div class="flex justify-between text-zinc-600">
                       <span>Guests</span>
@@ -614,10 +616,6 @@ export class RoomDetailComponent {
           this.submitting.set(false);
         },
       });
-  }
-
-  formatType(type: string): string {
-    return type.replace(/([A-Z])/g, ' $1').trim();
   }
 
   formatDateDisplay(d: Date | null): string {

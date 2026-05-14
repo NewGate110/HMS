@@ -22,4 +22,9 @@ export const STAFF_ROUTES: Routes = [
     loadComponent: () =>
       import('./room-status-board/room-status-board.component').then((m) => m.RoomStatusBoardComponent),
   },
+  {
+    path: 'walk-in',
+    loadComponent: () =>
+      import('./walk-in-booking/walk-in-booking.component').then((m) => m.WalkInBookingComponent),
+  },
 ];

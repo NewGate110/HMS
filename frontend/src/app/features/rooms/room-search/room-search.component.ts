@@ -16,6 +16,7 @@ import { AppLoaderComponent } from '../../../shared/ui/app-loader/app-loader.com
 import { AppEmptyStateComponent } from '../../../shared/ui/app-empty-state/app-empty-state.component';
 import { AppTableComponent } from '../../../shared/ui/app-table/app-table.component';
 import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.component';
+import { toYmd } from '../../../shared/utils/date.utils';
 
 @Component({
   selector: 'app-room-search',
@@ -39,7 +40,7 @@ import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.com
     <div class="mx-auto max-w-6xl space-y-6 px-4 py-12 text-zinc-900">
       <h1 class="text-3xl font-semibold tracking-tight">Room availability</h1>
       <app-card title="Search">
-        <form class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4" [formGroup]="form" (ngSubmit)="search()">
+        <form class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-6" [formGroup]="form" (ngSubmit)="search()">
           <mat-form-field appearance="outline">
             <mat-label>Hotel</mat-label>
             <mat-select formControlName="hotelId">
@@ -64,7 +65,15 @@ import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.com
             <mat-label>Min guests</mat-label>
             <input matInput type="number" formControlName="minCapacity" min="1" />
           </mat-form-field>
-          <div class="flex items-end md:col-span-2 lg:col-span-4">
+          <mat-form-field appearance="outline">
+            <mat-label>Min price ($)</mat-label>
+            <input matInput type="number" formControlName="minPrice" min="0" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Max price ($)</mat-label>
+            <input matInput type="number" formControlName="maxPrice" min="0" />
+          </mat-form-field>
+          <div class="flex items-end md:col-span-2 lg:col-span-6">
             <app-button variant="primary" type="submit" [disabled]="loading()">
               Search availability
             </app-button>
@@ -96,7 +105,7 @@ import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.com
             </ng-container>
             <ng-container matColumnDef="price">
               <th mat-header-cell *matHeaderCellDef>From</th>
-              <td mat-cell *matCellDef="let r">£{{ r.priceOffPeak }}</td>
+              <td mat-cell *matCellDef="let r">\${{ r.priceOffPeak }}</td>
             </ng-container>
             <ng-container matColumnDef="actions">
               <th mat-header-cell *matHeaderCellDef></th>
@@ -129,6 +138,8 @@ export class RoomSearchComponent {
     checkIn: [new Date(), Validators.required],
     checkOut: [new Date(Date.now() + 86400000), Validators.required],
     minCapacity: [1, [Validators.required, Validators.min(1)]],
+    minPrice: [null as number | null],
+    maxPrice: [null as number | null],
   });
 
   constructor() {
@@ -146,8 +157,8 @@ export class RoomSearchComponent {
   search(): void {
     if (this.form.invalid) return;
     const v = this.form.getRawValue();
-    const checkIn = this.toYmd(v.checkIn);
-    const checkOut = this.toYmd(v.checkOut);
+    const checkIn = toYmd(v.checkIn);
+    const checkOut = toYmd(v.checkOut);
     if (checkOut <= checkIn) return;
     this.searchedDates.set({ checkIn, checkOut });
     this.loading.set(true);
@@ -158,6 +169,8 @@ export class RoomSearchComponent {
         checkIn,
         checkOut,
         minCapacity: v.minCapacity,
+        minPrice: v.minPrice ?? undefined,
+        maxPrice: v.maxPrice ?? undefined,
       })
       .subscribe({
         next: (r) => {
@@ -171,7 +184,4 @@ export class RoomSearchComponent {
       });
   }
 
-  private toYmd(d: Date): string {
-    return d.toISOString().slice(0, 10);
-  }
 }

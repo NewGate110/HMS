@@ -1,5 +1,4 @@
 // Author: Salaams
-using AutoMapper;
 using HMS.Application.Interfaces.Services;
 using HMS.Application.Mappings;
 using HMS.Application.Services;
@@ -12,9 +11,8 @@ public static class ApplicationDependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        // AutoMapper — singleton; profile is stateless so one instance is fine
-        services.AddSingleton<IMapper>(new MapperConfiguration(cfg =>
-            cfg.AddProfile<MappingProfile>()).CreateMapper());
+        // AutoMapper — register profile explicitly (v16 API)
+        services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 
         // Application-layer services
         services.AddScoped<IAuthService,            AuthService>();

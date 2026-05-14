@@ -15,20 +15,26 @@ export interface RegisterGuestRequest {
 }
 
 export interface LoginResponse {
+  /** JWT is set as an HttpOnly cookie by the server; also returned here for Swagger testing. */
   token: string;
   expiresAt: string;
   userId: number;
   role: UserRole;
   fullName: string;
+  /** Returned in body so Angular does not need to decode the JWT. */
+  email: string;
   requiresPasswordChange: boolean;
 }
 
+/**
+ * Metadata stored in sessionStorage — does NOT include the JWT token.
+ * The token lives exclusively in the HttpOnly 'hms.auth' cookie.
+ */
 export interface AuthSession {
-  token: string;
   expiresAt: string;
   userId: number;
   role: UserRole;
   fullName: string;
-  email?: string;
+  email: string;
   requiresPasswordChange: boolean;
 }

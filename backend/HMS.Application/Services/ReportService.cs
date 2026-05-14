@@ -11,15 +11,18 @@ public class ReportService : IReportService
     private readonly IHotelRepository _hotels;
     private readonly IRoomRepository _rooms;
     private readonly IBookingRepository _bookings;
+    private readonly IUserRepository _users;
 
     public ReportService(
         IHotelRepository hotels,
         IRoomRepository rooms,
-        IBookingRepository bookings)
+        IBookingRepository bookings,
+        IUserRepository users)
     {
         _hotels   = hotels;
         _rooms    = rooms;
         _bookings = bookings;
+        _users    = users;
     }
 
     public async Task<OccupancyReportDto> GetOccupancyReportAsync(
@@ -82,5 +85,46 @@ public class ReportService : IReportService
             TotalBookings       = count,
             AverageBookingValue = count == 0 ? 0 : Math.Round(total / count, 2),
         };
+    }
+
+    public async Task<IEnumerable<StaffPerformanceDto>> GetStaffPerformanceAsync(int hotelId)
+    {
+        var allStaff  = (await _users.GetAllStaffAsync()).ToList();
+        var bookings  = (await _bookings.GetByHotelIdAsync(hotelId)).ToList();
+
+        // Bookings created by each staff member for this hotel
+        var createdByStaff = bookings
+            .Where(b => b.CreatedByStaffId.HasValue)
+            .GroupBy(b => b.CreatedByStaffId!.Value)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        // CheckedIn bookings per staff (pre-auth payment has ProcessedByStaffId set)
+        var checkInsPerStaff = bookings
+            .Where(b => b.Status is BookingStatus.CheckedIn or BookingStatus.CheckedOut)
+            .SelectMany(b => b.Payments
+                .Where(p => p.ProcessedByStaffId.HasValue)
+                .Select(p => p.ProcessedByStaffId!.Value))
+            .GroupBy(id => id)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        // CheckedOut bookings — invoice capture payment by staff
+        var checkOutsPerStaff = bookings
+            .Where(b => b.Status == BookingStatus.CheckedOut)
+            .SelectMany(b => b.Payments
+                .Where(p => p.ProcessedByStaffId.HasValue && p.Status == PaymentStatus.Captured)
+                .Select(p => p.ProcessedByStaffId!.Value))
+            .GroupBy(id => id)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        return allStaff.Select(s => new StaffPerformanceDto
+        {
+            StaffId          = s.Id,
+            FullName         = $"{s.FirstName} {s.LastName}",
+            Department       = s.Department,
+            Role             = s.Role.ToString(),
+            BookingsCreated  = createdByStaff.GetValueOrDefault(s.Id, 0),
+            CheckIns         = checkInsPerStaff.GetValueOrDefault(s.Id, 0),
+            CheckOuts        = checkOutsPerStaff.GetValueOrDefault(s.Id, 0),
+        });
     }
 }

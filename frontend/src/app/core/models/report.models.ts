@@ -17,3 +17,13 @@ export interface RevenueReportDto {
   totalBookings: number;
   averageBookingValue: number;
 }
+
+export interface StaffPerformanceDto {
+  staffId: number;
+  fullName: string;
+  department: string;
+  role: string;
+  bookingsCreated: number;
+  checkIns: number;
+  checkOuts: number;
+}

@@ -47,7 +47,9 @@ public class MappingProfile : Profile
             .ForMember(d => d.Role, o => o.MapFrom(s => s.Role.ToString()));
 
         CreateMap<StaffUser, StaffUserDto>()
-            .ForMember(d => d.Role, o => o.MapFrom(s => s.Role.ToString()));
+            .ForMember(d => d.Role,      o => o.MapFrom(s => s.Role.ToString()))
+            .ForMember(d => d.IsLocked,  o => o.MapFrom(s => s.IsLocked))
+            .ForMember(d => d.IsActive,  o => o.MapFrom(s => s.IsActive));
 
         // ── Payments ──────────────────────────────────────────────────────────
         CreateMap<Payment, PaymentDto>()

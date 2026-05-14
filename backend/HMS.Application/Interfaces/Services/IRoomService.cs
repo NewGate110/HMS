@@ -13,4 +13,5 @@ public interface IRoomService
         string? location, DateTime? checkIn, DateTime? checkOut,
         int? guests, RoomType? roomType, decimal? minPrice, decimal? maxPrice);
     Task<IEnumerable<DateRangeDto>> GetUnavailableDatesAsync(int roomId);
+    Task<RoomDto> UpdateRoomPricingAsync(int roomId, UpdateRoomPricingDto dto);
 }

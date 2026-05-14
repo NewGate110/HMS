@@ -71,4 +71,16 @@ public class RoomService : IRoomService
             To   = r.To.ToString("yyyy-MM-dd"),
         });
     }
+
+    public async Task<RoomDto> UpdateRoomPricingAsync(int roomId, UpdateRoomPricingDto dto)
+    {
+        var room = await _rooms.GetByIdAsync(roomId)
+            ?? throw new KeyNotFoundException($"Room {roomId} not found.");
+
+        room.PriceOffPeak = dto.PriceOffPeak;
+        room.PricePeak    = dto.PricePeak;
+
+        await _rooms.UpdateAsync(room);
+        return _mapper.Map<RoomDto>(room);
+    }
 }

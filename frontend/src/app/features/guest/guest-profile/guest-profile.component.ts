@@ -32,10 +32,16 @@ import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.com
             <mat-form-field appearance="outline" class="w-full">
               <mat-label>First name</mat-label>
               <input matInput formControlName="firstName" />
+              @if (form.controls.firstName.hasError('required')) {
+                <mat-error>First name is required</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline" class="w-full">
               <mat-label>Last name</mat-label>
               <input matInput formControlName="lastName" />
+              @if (form.controls.lastName.hasError('required')) {
+                <mat-error>Last name is required</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline" class="w-full">
               <mat-label>Phone</mat-label>
@@ -54,6 +60,26 @@ import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.com
           <p class="text-sm text-zinc-600">
             Late check-out, high floor, hypoallergenic pillows — wire to API when guest preferences exist.
           </p>
+        </app-card>
+
+        <!-- Payment Methods placeholder -->
+        <app-card title="Payment Methods">
+          <div class="mt-2 flex flex-col items-start gap-3">
+            <div class="flex items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3 text-sm text-zinc-600 w-full">
+              <span class="material-icons-outlined text-zinc-400">credit_card_off</span>
+              <span>No saved cards — payment is processed at checkout.</span>
+            </div>
+            <button
+              disabled
+              class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-400 cursor-not-allowed opacity-60">
+              <span class="material-icons-outlined text-[16px]">add</span>
+              Add Card
+              <span class="ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-zinc-500">Coming soon</span>
+            </button>
+            <p class="text-xs text-zinc-400">
+              Card storage is part of our payment simulation. All charges are processed securely at check-out.
+            </p>
+          </div>
         </app-card>
       }
     </div>
@@ -104,7 +130,7 @@ export class GuestProfileComponent {
         this.saving.set(false);
         this.notify.success('Profile updated');
       },
-      error: () => this.saving.set(false),
+      error: () => { this.saving.set(false); this.notify.error('Failed to update profile.'); },
     });
   }
 }

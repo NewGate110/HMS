@@ -17,6 +17,12 @@ public class RoomRepository : IRoomRepository
             .Include(r => r.Hotel)
             .FirstOrDefaultAsync(r => r.Id == id);
 
+    public async Task<IEnumerable<Room>> GetByIdsAsync(IEnumerable<int> ids) =>
+        await _db.Rooms
+            .Include(r => r.Hotel)
+            .Where(r => ids.Contains(r.Id))
+            .ToListAsync();
+
     public async Task<IEnumerable<Room>> GetByHotelIdAsync(int hotelId) =>
         await _db.Rooms
             .Include(r => r.Hotel)

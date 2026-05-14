@@ -16,7 +16,7 @@ import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.com
       <div class="grid gap-4 sm:grid-cols-3">
         <app-stat-card label="Hotels" [value]="hotels().toString()" />
         <app-stat-card label="Staff accounts" [value]="staff().toString()" />
-        <app-stat-card label="Audit events (24h)" value="128" hint="Mock stream" />
+        <app-stat-card label="Audit events (24h)" [value]="auditEvents24h().toString()" />
       </div>
       <app-card title="Shortcuts">
         <div class="mt-4 flex flex-wrap gap-2">
@@ -39,9 +39,14 @@ export class AdminDashboardComponent {
 
   readonly hotels = signal(0);
   readonly staff = signal(0);
+  readonly auditEvents24h = signal(0);
 
   constructor() {
     this.adminApi.getHotels().subscribe((h) => this.hotels.set(h.length));
     this.adminApi.getStaff().subscribe((s) => this.staff.set(s.length));
+    const cutoff = new Date(Date.now() - 86_400_000);
+    this.adminApi.getAuditLogs().subscribe((logs) =>
+      this.auditEvents24h.set(logs.filter((l) => new Date(l.timestamp) >= cutoff).length),
+    );
   }
 }

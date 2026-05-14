@@ -43,7 +43,10 @@ import type { ChartConfiguration } from 'chart.js';
         <app-chart-card title="Revenue" [type]="'bar'" [data]="revenueChart()" />
         <app-chart-card title="Occupancy %" [type]="'line'" [data]="occupancyChart()" />
       </div>
-      <app-chart-card title="Customer segments (mock)" [type]="'doughnut'" [data]="segmentChart()" />
+      <div class="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm text-center">
+        <span class="material-icons-outlined text-3xl text-zinc-300" aria-hidden="true">pie_chart</span>
+        <p class="mt-2 text-sm font-medium text-zinc-500">Customer segments — data not yet available</p>
+      </div>
     </div>
   `,
 })
@@ -58,10 +61,6 @@ export class ReportsPageComponent {
 
   readonly revenueChart = signal<ChartConfiguration['data']>({ labels: [], datasets: [] });
   readonly occupancyChart = signal<ChartConfiguration['data']>({ labels: [], datasets: [] });
-  readonly segmentChart = signal<ChartConfiguration['data']>({
-    labels: ['Corporate', 'OTA', 'Direct', 'GDS'],
-    datasets: [{ data: [38, 32, 22, 8], backgroundColor: ['#2563eb', '#6366f1', '#22c55e', '#f97316'] }],
-  });
 
   constructor() {
     this.load();
@@ -75,7 +74,7 @@ export class ReportsPageComponent {
     this.reportsApi.getRevenue(hid, from, to).subscribe((r) => {
       this.revenueChart.set({
         labels: ['Period total'],
-        datasets: [{ label: '£', data: [Number(r.totalRevenue)] }],
+        datasets: [{ label: '$', data: [Number(r.totalRevenue)] }],
       });
     });
     this.reportsApi.getOccupancy(hid, from, to).subscribe((o) => {

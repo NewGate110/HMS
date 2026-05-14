@@ -24,4 +24,10 @@ public class HotelRepository : IHotelRepository
         await _db.Hotels
             .Include(h => h.Rooms)
             .FirstOrDefaultAsync(h => h.Id == id);
+
+    public async Task UpdateAsync(Hotel hotel)
+    {
+        _db.Hotels.Update(hotel);
+        await _db.SaveChangesAsync();
+    }
 }

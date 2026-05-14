@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import type { BookingDto, CreateBookingDto } from '../models/booking.models';
+import type { AddBookingServiceDto, BookingDto, CreateBookingDto, UpdateBookingDto } from '../models/booking.models';
 import type { InvoiceDto } from '../models/invoice.models';
 import type { PaymentDto } from '../models/payment.models';
 
@@ -25,6 +25,18 @@ export class BookingsApiService {
 
   create(guestId: number, body: CreateBookingDto): Observable<BookingDto> {
     return this.http.post<BookingDto>(`${this.base}/guest/${guestId}`, body);
+  }
+
+  update(id: number, body: UpdateBookingDto): Observable<BookingDto> {
+    return this.http.put<BookingDto>(`${this.base}/${id}`, body);
+  }
+
+  addService(id: number, body: AddBookingServiceDto): Observable<BookingDto> {
+    return this.http.post<BookingDto>(`${this.base}/${id}/services`, body);
+  }
+
+  removeService(id: number, serviceId: number): Observable<BookingDto> {
+    return this.http.delete<BookingDto>(`${this.base}/${id}/services/${serviceId}`);
   }
 
   cancel(id: number): Observable<BookingDto> {

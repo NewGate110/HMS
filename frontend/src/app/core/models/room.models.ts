@@ -30,3 +30,8 @@ export interface RoomSearchResponse {
   results: RoomSearchResultItem[];
   totalCount: number;
 }
+
+export interface UpdateRoomPricingDto {
+  priceOffPeak: number;
+  pricePeak: number;
+}

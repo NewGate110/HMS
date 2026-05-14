@@ -1,44 +1,41 @@
+/**
+ * TokenService — manages the user's session metadata.
+ *
+ * The JWT itself lives exclusively in the HttpOnly 'hms.auth' cookie set by the
+ * server on login/register and cleared on logout.  This service never reads or
+ * writes the token value; it only persists the non-sensitive session metadata
+ * (userId, role, fullName, email, expiresAt) so the Angular app can drive its UI
+ * without decoding the cookie (which JS cannot access by design).
+ */
 import { Injectable, computed, signal } from '@angular/core';
-import { decodeJwtPayload, jwtExpiresAt } from '../../shared/utils/jwt.util';
 import type { AuthSession } from '../models/auth.models';
-import type { UserRole } from '../constants/roles';
 import { isUserRole } from '../constants/roles';
 
-const STORAGE_TOKEN = 'hms.accessToken';
 const STORAGE_SESSION = 'hms.session';
 
 @Injectable({ providedIn: 'root' })
 export class TokenService {
-  private readonly accessToken = signal<string | null>(this.readStoredToken());
   private readonly sessionSnapshot = signal<AuthSession | null>(this.readStoredSession());
 
-  readonly token = this.accessToken.asReadonly();
   readonly session = this.sessionSnapshot.asReadonly();
 
+  /** True when the stored expiresAt timestamp is within 5 seconds of now (or absent). */
   readonly isExpired = computed(() => {
-    const t = this.accessToken();
-    if (!t) return true;
-    const exp = jwtExpiresAt(t);
-    if (!exp) return false;
-    return exp.getTime() <= Date.now() + 5000;
+    const s = this.sessionSnapshot();
+    if (!s?.expiresAt) return true;
+    return new Date(s.expiresAt).getTime() <= Date.now() + 5000;
   });
 
-  getAccessToken(): string | null {
-    return this.accessToken();
-  }
-
+  /** Persist session metadata to sessionStorage and schedule the expiry warning. */
   persistFromLogin(session: AuthSession): void {
-    sessionStorage.setItem(STORAGE_TOKEN, session.token);
     sessionStorage.setItem(STORAGE_SESSION, JSON.stringify(session));
-    this.accessToken.set(session.token);
     this.sessionSnapshot.set(session);
-    this.scheduleExpiryWarning(session.token);
+    this.scheduleExpiryWarning(session.expiresAt);
   }
 
+  /** Clear session metadata (cookie is cleared by the server's logout endpoint). */
   clear(): void {
-    sessionStorage.removeItem(STORAGE_TOKEN);
     sessionStorage.removeItem(STORAGE_SESSION);
-    this.accessToken.set(null);
     this.sessionSnapshot.set(null);
     if (this.expiryTimer !== null) {
       clearTimeout(this.expiryTimer);
@@ -46,23 +43,24 @@ export class TokenService {
     }
   }
 
+  /** Re-hydrate from sessionStorage on app start (e.g. page refresh). */
   hydrateFromStorage(): void {
-    const t = this.readStoredToken();
     const s = this.readStoredSession();
-    this.accessToken.set(t);
     this.sessionSnapshot.set(s);
-    if (t) this.scheduleExpiryWarning(t);
+    if (s) this.scheduleExpiryWarning(s.expiresAt);
   }
+
+  // ── Private ─────────────────────────────────────────────────────────────────
 
   private expiryTimer: ReturnType<typeof setTimeout> | null = null;
 
-  private scheduleExpiryWarning(token: string): void {
+  /** Fire the 'hms:session-expiring' event 60 seconds before the token expires. */
+  private scheduleExpiryWarning(expiresAt: string): void {
     if (this.expiryTimer !== null) {
       clearTimeout(this.expiryTimer);
       this.expiryTimer = null;
     }
-    const exp = jwtExpiresAt(token);
-    if (!exp) return;
+    const exp = new Date(expiresAt);
     const ms = exp.getTime() - Date.now() - 60_000;
     if (ms <= 0) return;
     this.expiryTimer = setTimeout(() => {
@@ -70,31 +68,15 @@ export class TokenService {
     }, ms);
   }
 
-  private readStoredToken(): string | null {
-    return sessionStorage.getItem(STORAGE_TOKEN);
-  }
-
   private readStoredSession(): AuthSession | null {
     const raw = sessionStorage.getItem(STORAGE_SESSION);
     if (!raw) return null;
     try {
       const parsed = JSON.parse(raw) as AuthSession;
-      if (!parsed?.token || !isUserRole(parsed.role)) return null;
+      if (!isUserRole(parsed.role) || !parsed.expiresAt) return null;
       return parsed;
     } catch {
       return null;
     }
-  }
-
-  enrichEmailFromJwt(): void {
-    const t = this.accessToken();
-    const s = this.sessionSnapshot();
-    if (!t || !s) return;
-    const payload = decodeJwtPayload(t);
-    const email = typeof payload?.email === 'string' ? payload.email : undefined;
-    if (!email || s.email === email) return;
-    const next: AuthSession = { ...s, email };
-    sessionStorage.setItem(STORAGE_SESSION, JSON.stringify(next));
-    this.sessionSnapshot.set(next);
   }
 }

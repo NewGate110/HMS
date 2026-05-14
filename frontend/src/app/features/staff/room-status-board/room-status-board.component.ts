@@ -1,17 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { MatSelectModule } from '@angular/material/select';
 import { HotelsApiService } from '../../../core/services/hotels-api.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { environment } from '../../../../environments/environment';
 import type { RoomDto } from '../../../core/models/room.models';
 import { ROOM_STATUSES, type RoomStatus } from '../../../core/constants/room-status';
 import { AppCardComponent } from '../../../shared/ui/app-card/app-card.component';
-import { AppBadgeComponent } from '../../../shared/ui/app-badge/app-badge.component';
 import { AppLoaderComponent } from '../../../shared/ui/app-loader/app-loader.component';
 import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.component';
 
 @Component({
   selector: 'app-room-status-board',
   standalone: true,
-  imports: [AppCardComponent, AppBadgeComponent, AppLoaderComponent, AppButtonComponent],
+  imports: [MatSelectModule, AppCardComponent, AppLoaderComponent, AppButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-4">
@@ -31,7 +32,16 @@ import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.com
                     class="flex items-center justify-between rounded-lg border border-zinc-200/80 bg-zinc-50 px-2 py-2 text-xs"
                   >
                     <span class="font-medium">{{ r.roomNumber }}</span>
-                    <app-badge tone="neutral">{{ r.type }}</app-badge>
+                    <select
+                      class="rounded border border-zinc-200 bg-white px-1 py-0.5 text-xs text-zinc-700"
+                      [value]="r.status"
+                      [disabled]="updating()[r.id]"
+                      (change)="changeStatus(r, $any($event.target).value)"
+                    >
+                      @for (s of ROOM_STATUSES; track s) {
+                        <option [value]="s">{{ s }}</option>
+                      }
+                    </select>
                   </div>
                 }
               </div>
@@ -44,10 +54,12 @@ import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.com
 })
 export class RoomStatusBoardComponent {
   private readonly hotelsApi = inject(HotelsApiService);
+  private readonly notify = inject(NotificationService);
 
   readonly ROOM_STATUSES = ROOM_STATUSES;
   readonly rooms = signal<RoomDto[]>([]);
   readonly loading = signal(true);
+  readonly updating = signal<Record<number, boolean>>({});
 
   readonly byStatus = computed(() => {
     const map = new Map<RoomStatus, RoomDto[]>();
@@ -76,6 +88,21 @@ export class RoomStatusBoardComponent {
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
+    });
+  }
+
+  changeStatus(room: RoomDto, newStatus: RoomStatus): void {
+    if (room.status === newStatus) return;
+    this.updating.update((u) => ({ ...u, [room.id]: true }));
+    this.hotelsApi.updateRoomStatus(environment.defaultHotelId, room.id, newStatus).subscribe({
+      next: (updated) => {
+        this.rooms.update((rs) => rs.map((r) => (r.id === updated.id ? updated : r)));
+        this.updating.update((u) => ({ ...u, [room.id]: false }));
+      },
+      error: () => {
+        this.updating.update((u) => ({ ...u, [room.id]: false }));
+        this.notify.error('Failed to update room status.');
+      },
     });
   }
 }

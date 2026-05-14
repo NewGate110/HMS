@@ -23,15 +23,39 @@ public class UserRepository : IUserRepository
     public async Task<StaffUser?> GetStaffByIdAsync(int id) =>
         await _db.Staff.FirstOrDefaultAsync(s => s.Id == id);
 
+    public async Task<IEnumerable<GuestUser>> GetAllGuestsAsync() =>
+        await _db.Guests
+            .OrderBy(g => g.LastName)
+            .ThenBy(g => g.FirstName)
+            .ToListAsync();
+
     public async Task<IEnumerable<StaffUser>> GetAllStaffAsync() =>
         await _db.Staff
             .OrderBy(s => s.LastName)
             .ThenBy(s => s.FirstName)
             .ToListAsync();
 
+    public async Task<IEnumerable<GuestUser>> SearchGuestsAsync(string term)
+    {
+        var lower = term.ToLower();
+        return await _db.Guests
+            .Where(g => g.Email.ToLower().Contains(lower)
+                     || g.FirstName.ToLower().Contains(lower)
+                     || g.LastName.ToLower().Contains(lower))
+            .OrderBy(g => g.LastName)
+            .Take(50)
+            .ToListAsync();
+    }
+
     public async Task AddAsync(GuestUser guest)
     {
         _db.Guests.Add(guest);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task AddStaffAsync(StaffUser staff)
+    {
+        _db.Staff.Add(staff);
         await _db.SaveChangesAsync();
     }
 

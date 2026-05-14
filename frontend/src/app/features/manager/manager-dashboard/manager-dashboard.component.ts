@@ -9,6 +9,7 @@ import type { OccupancyReportDto, RevenueReportDto } from '../../../core/models/
 import { AppStatCardComponent } from '../../../shared/ui/app-stat-card/app-stat-card.component';
 import { AppChartCardComponent } from '../../../shared/ui/app-chart-card/app-chart-card.component';
 import { AppButtonComponent } from '../../../shared/ui/app-button/app-button.component';
+import { toYmd } from '../../../shared/utils/date.utils';
 import type { ChartConfiguration } from 'chart.js';
 
 @Component({
@@ -44,9 +45,9 @@ import type { ChartConfiguration } from 'chart.js';
       </form>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <app-stat-card label="Occupancy" [value]="occPct()" hint="Selected window" />
-        <app-stat-card label="ADR (mock)" [value]="'£' + adr()" hint="Derived sample" />
-        <app-stat-card label="RevPAR (mock)" [value]="'£' + revpar()" />
-        <app-stat-card label="Cancellations" [value]="cancellations().toString()" hint="Mock KPI" />
+        <app-stat-card label="ADR (mock)" [value]="'$' + adr()" hint="Derived sample" />
+        <app-stat-card label="RevPAR (mock)" [value]="'$' + revpar()" />
+        <app-stat-card label="Cancellations" value="—" hint="API pending" />
       </div>
       @defer (on idle) {
         <div class="grid gap-4 lg:grid-cols-2">
@@ -74,16 +75,15 @@ export class ManagerDashboardComponent {
   readonly occPct = signal('—');
   readonly adr = signal('0');
   readonly revpar = signal('0');
-  readonly cancellations = signal(3);
 
   readonly revChartData = signal<ChartConfiguration['data']>({
-    labels: ['W1', 'W2', 'W3', 'W4'],
-    datasets: [{ label: 'Revenue £k', data: [42, 55, 48, 61] }],
+    labels: [],
+    datasets: [{ label: 'Revenue $', data: [] }],
   });
 
   readonly occChartData = signal<ChartConfiguration['data']>({
-    labels: ['W1', 'W2', 'W3', 'W4'],
-    datasets: [{ label: 'Occupancy %', data: [68, 72, 70, 76], tension: 0.3 }],
+    labels: [],
+    datasets: [{ label: 'Occupancy %', data: [], tension: 0.3 }],
   });
 
   constructor() {
@@ -92,12 +92,16 @@ export class ManagerDashboardComponent {
 
   load(): void {
     const v = this.range.getRawValue();
-    const from = this.toYmd(v.from);
-    const to = this.toYmd(v.to);
+    const from = toYmd(v.from);
+    const to = toYmd(v.to);
     const hid = environment.defaultHotelId;
     this.reportsApi.getOccupancy(hid, from, to).subscribe((o) => {
       this.occ.set(o);
       this.occPct.set(`${o.occupancyRate.toFixed(1)}%`);
+      this.occChartData.set({
+        labels: [`${from} → ${to}`],
+        datasets: [{ label: 'Occupancy %', data: [o.occupancyRate], tension: 0.3 }],
+      });
     });
     this.reportsApi.getRevenue(hid, from, to).subscribe((r) => {
       this.rev.set(r);
@@ -107,10 +111,11 @@ export class ManagerDashboardComponent {
       const rooms = this.occ()?.totalRooms ?? 1;
       const revparVal = (Number(r.totalRevenue) / rooms).toFixed(0);
       this.revpar.set(revparVal);
+      this.revChartData.set({
+        labels: [`${from} → ${to}`],
+        datasets: [{ label: 'Revenue $', data: [Number(r.totalRevenue)] }],
+      });
     });
   }
 
-  private toYmd(d: Date): string {
-    return d.toISOString().slice(0, 10);
-  }
 }

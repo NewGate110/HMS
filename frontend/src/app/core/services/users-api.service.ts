@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import type { BookingDto } from '../models/booking.models';
-import type { GuestUserDto, StaffUserDto, UpdateGuestProfileDto } from '../models/user.models';
+import type { GuestListDto, GuestStatsDto, GuestUserDto, StaffUserDto, UpdateGuestProfileDto } from '../models/user.models';
 
 @Injectable({ providedIn: 'root' })
 export class UsersApiService {
@@ -12,6 +12,14 @@ export class UsersApiService {
 
   getGuest(id: number): Observable<GuestUserDto> {
     return this.http.get<GuestUserDto>(`${this.base}/guests/${id}`);
+  }
+
+  getGuestStats(id: number): Observable<GuestStatsDto> {
+    return this.http.get<GuestStatsDto>(`${this.base}/guests/${id}/stats`);
+  }
+
+  searchGuests(term: string): Observable<GuestListDto[]> {
+    return this.http.get<GuestListDto[]>(`${this.base}/guests/search`, { params: { term } });
   }
 
   updateGuest(id: number, body: UpdateGuestProfileDto): Observable<GuestUserDto> {

@@ -8,4 +8,5 @@ public interface IHotelRepository
     Task<IEnumerable<Hotel>> GetAllAsync();
     Task<Hotel?> GetByIdAsync(int id);
     Task<Hotel?> GetByIdWithRoomsAsync(int id);
+    Task UpdateAsync(Hotel hotel);
 }

@@ -57,6 +57,11 @@ import { MSG } from '../../../core/i18n/ui-messages';
             <mat-form-field appearance="outline" class="w-full md:col-span-2">
               <mat-label>Email</mat-label>
               <input matInput type="email" formControlName="email" autocomplete="email" />
+              @if (form.controls.email.hasError('required')) {
+                <mat-error>Email is required</mat-error>
+              } @else if (form.controls.email.hasError('email')) {
+                <mat-error>Enter a valid email address</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline" class="w-full md:col-span-2">
               <mat-label>Password</mat-label>
@@ -66,14 +71,25 @@ import { MSG } from '../../../core/i18n/ui-messages';
                 formControlName="password"
                 autocomplete="new-password"
               />
+              @if (form.controls.password.hasError('required')) {
+                <mat-error>Password is required</mat-error>
+              } @else if (form.controls.password.hasError('minlength')) {
+                <mat-error>Password must be at least 8 characters</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline" class="w-full">
               <mat-label>First name</mat-label>
               <input matInput formControlName="firstName" autocomplete="given-name" />
+              @if (form.controls.firstName.hasError('required')) {
+                <mat-error>First name is required</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline" class="w-full">
               <mat-label>Last name</mat-label>
               <input matInput formControlName="lastName" autocomplete="family-name" />
+              @if (form.controls.lastName.hasError('required')) {
+                <mat-error>Last name is required</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline" class="w-full md:col-span-2">
               <mat-label>Phone</mat-label>

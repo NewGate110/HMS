@@ -9,6 +9,8 @@ public interface IBookingRepository
     Task<Booking?> GetByIdWithDetailsAsync(int id);
     Task<IEnumerable<Booking>> GetByGuestIdAsync(int guestId);
     Task<IEnumerable<Booking>> GetByHotelIdAsync(int hotelId);
+    /// <summary>Returns all bookings (lightweight — no navigation properties loaded).</summary>
+    Task<IEnumerable<Booking>> GetAllAsync();
     Task AddAsync(Booking booking);
     Task UpdateAsync(Booking booking);
 }

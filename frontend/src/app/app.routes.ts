@@ -31,6 +31,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'reset-password',
+        loadComponent: () =>
+          import('./features/auth/reset-password/reset-password.component').then(
+            (m) => m.ResetPasswordComponent,
+          ),
+      },
+      {
         path: 'rooms/search',
         loadComponent: () =>
           import('./features/rooms/room-search/room-search.component').then(
@@ -79,7 +86,7 @@ export const routes: Routes = [
       {
         path: 'staff',
         canActivate: [roleGuard],
-        data: { roles: ['FrontDeskStaff'] },
+        data: { roles: ['FrontDeskStaff', 'HotelManager', 'Admin'] },
         loadChildren: () => import('./features/staff/staff.routes').then((m) => m.STAFF_ROUTES),
       },
       {

@@ -1,9 +1,11 @@
 import { SlicePipe } from '@angular/common';
+import { FormatTypePipe } from '../../../shared/pipes/format-type.pipe';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { BookingsApiService } from '../../../core/services/bookings-api.service';
 import { HotelsApiService } from '../../../core/services/hotels-api.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { environment } from '../../../../environments/environment';
 import type { BookingDto } from '../../../core/models/booking.models';
 import type { RoomDto } from '../../../core/models/room.models';
@@ -23,6 +25,7 @@ import { AppLoaderComponent } from '../../../shared/ui/app-loader/app-loader.com
     AppCardComponent,
     AppTableComponent,
     AppLoaderComponent,
+    FormatTypePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -48,7 +51,7 @@ import { AppLoaderComponent } from '../../../shared/ui/app-loader/app-loader.com
                 <th mat-header-cell *matHeaderCellDef>Room</th>
                 <td mat-cell *matCellDef="let b">
                   @if (b.rooms.length > 0) {
-                    {{ b.rooms[0].roomNumber }} · {{ formatType(b.rooms[0].type) }}
+                    {{ b.rooms[0].roomNumber }} · {{ b.rooms[0].type | formatType }}
                   } @else {
                     —
                   }
@@ -80,6 +83,7 @@ import { AppLoaderComponent } from '../../../shared/ui/app-loader/app-loader.com
 export class StaffDashboardComponent {
   private readonly bookingsApi = inject(BookingsApiService);
   private readonly hotelsApi = inject(HotelsApiService);
+  private readonly notify = inject(NotificationService);
   readonly hotelId = signal(environment.defaultHotelId);
   readonly bookings = signal<BookingDto[]>([]);
   readonly rooms = signal<RoomDto[]>([]);
@@ -98,32 +102,37 @@ export class StaffDashboardComponent {
         if (h.length) this.hotelId.set(h[0]!.id);
         this.refresh();
       },
-      error: () => this.refresh(),
+      error: () => {
+        this.loading.set(false);
+        this.notify.error('Failed to load hotel data.');
+      },
     });
-  }
-
-  formatType(type: string): string {
-    return type.replace(/([A-Z])/g, ' $1').trim();
   }
 
   private refresh(): void {
     const hid = this.hotelId();
-    this.bookingsApi.getByHotel(hid).subscribe((b) => {
-      this.bookings.set(b);
-      const today = new Date().toISOString().slice(0, 10);
-      this.todayRows.set(
-        b.filter((x) => x.checkInDate.startsWith(today) || x.checkOutDate.startsWith(today)),
-      );
-      this.arrivals.set(b.filter((x) => x.checkInDate.startsWith(today)).length);
-      this.departures.set(b.filter((x) => x.checkOutDate.startsWith(today)).length);
+    this.bookingsApi.getByHotel(hid).subscribe({
+      next: (b) => {
+        this.bookings.set(b);
+        const today = new Date().toISOString().slice(0, 10);
+        this.todayRows.set(
+          b.filter((x) => x.checkInDate.startsWith(today) || x.checkOutDate.startsWith(today)),
+        );
+        this.arrivals.set(b.filter((x) => x.checkInDate.startsWith(today)).length);
+        this.departures.set(b.filter((x) => x.checkOutDate.startsWith(today)).length);
+      },
+      error: () => { this.loading.set(false); this.notify.error('Failed to load bookings.'); },
     });
-    this.hotelsApi.getRooms(hid).subscribe((r) => {
-      this.rooms.set(r);
-      this.occupied.set(r.filter((x) => x.status === 'Occupied').length);
-      this.hkQueue.set(
-        r.filter((x) => x.status === 'Cleaning' || x.status === 'OutOfService').length,
-      );
-      this.loading.set(false);
+    this.hotelsApi.getRooms(hid).subscribe({
+      next: (r) => {
+        this.rooms.set(r);
+        this.occupied.set(r.filter((x) => x.status === 'Occupied').length);
+        this.hkQueue.set(
+          r.filter((x) => x.status === 'Cleaning' || x.status === 'OutOfService').length,
+        );
+        this.loading.set(false);
+      },
+      error: () => { this.loading.set(false); this.notify.error('Failed to load room data.'); },
     });
   }
 }

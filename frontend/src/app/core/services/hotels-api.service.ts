@@ -4,6 +4,7 @@ import type { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import type { HotelDto, HotelSummaryDto } from '../models/hotel.models';
 import type { RoomDto } from '../models/room.models';
+import type { RoomStatus } from '../constants/room-status';
 
 @Injectable({ providedIn: 'root' })
 export class HotelsApiService {
@@ -20,5 +21,9 @@ export class HotelsApiService {
 
   getRooms(hotelId: number): Observable<RoomDto[]> {
     return this.http.get<RoomDto[]>(`${this.base}/${hotelId}/rooms`);
+  }
+
+  updateRoomStatus(hotelId: number, roomId: number, status: RoomStatus): Observable<RoomDto> {
+    return this.http.patch<RoomDto>(`${this.base}/${hotelId}/rooms/${roomId}/status`, { status });
   }
 }

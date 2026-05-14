@@ -61,6 +61,11 @@ interface DemoUser { role: string; name: string; email: string; password: string
             <mat-form-field appearance="outline" class="w-full">
               <mat-label>Email</mat-label>
               <input matInput type="email" formControlName="email" autocomplete="username" />
+              @if (form.controls.email.hasError('required')) {
+                <mat-error>Email is required</mat-error>
+              } @else if (form.controls.email.hasError('email')) {
+                <mat-error>Enter a valid email address</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline" class="w-full">
               <mat-label>Password</mat-label>
@@ -70,6 +75,9 @@ interface DemoUser { role: string; name: string; email: string; password: string
                 formControlName="password"
                 autocomplete="current-password"
               />
+              @if (form.controls.password.hasError('required')) {
+                <mat-error>Password is required</mat-error>
+              }
             </mat-form-field>
             <mat-checkbox formControlName="remember">Stay signed in</mat-checkbox>
             @if (error()) {

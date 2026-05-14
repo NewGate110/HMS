@@ -4,7 +4,7 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatDatepickerModule, DateFilterFn } from '@angular/material/datepicker';
 import { MatSelectModule } from '@angular/material/select';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -19,6 +19,7 @@ import type { RoomDto } from '../../../core/models/room.models';
 import type { AncillaryServiceDto } from '../../../core/models/service.models';
 import { NotificationService } from '../../../core/services/notification.service';
 import { Router } from '@angular/router';
+import { toYmd } from '../../../shared/utils/date.utils';
 
 @Component({
   selector: 'app-booking-wizard',
@@ -48,25 +49,43 @@ import { Router } from '@angular/router';
                   <mat-option [value]="h.id">{{ h.name }}</mat-option>
                 }
               </mat-select>
+              @if (searchForm.controls.hotelId.hasError('required')) {
+                <mat-error>Please select a hotel</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Guests</mat-label>
               <input matInput type="number" formControlName="minCapacity" min="1" />
+              @if (searchForm.controls.minCapacity.hasError('required')) {
+                <mat-error>Guest count is required</mat-error>
+              } @else if (searchForm.controls.minCapacity.hasError('min')) {
+                <mat-error>At least 1 guest is required</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Check-in</mat-label>
-              <input matInput [matDatepicker]="ci" formControlName="checkIn" />
+              <input matInput [matDatepicker]="ci" [matDatepickerFilter]="dateFilter" [min]="minDate" formControlName="checkIn" />
               <mat-datepicker-toggle matIconSuffix [for]="ci" />
               <mat-datepicker #ci />
+              @if (searchForm.controls.checkIn.hasError('required')) {
+                <mat-error>Check-in date is required</mat-error>
+              } @else if (searchForm.controls.checkIn.hasError('matDatepickerMin')) {
+                <mat-error>Check-in cannot be in the past</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Check-out</mat-label>
-              <input matInput [matDatepicker]="co" formControlName="checkOut" />
+              <input matInput [matDatepicker]="co" [matDatepickerFilter]="dateFilter" [min]="minDate" formControlName="checkOut" />
               <mat-datepicker-toggle matIconSuffix [for]="co" />
               <mat-datepicker #co />
+              @if (searchForm.controls.checkOut.hasError('required')) {
+                <mat-error>Check-out date is required</mat-error>
+              } @else if (searchForm.controls.checkOut.hasError('matDatepickerMin')) {
+                <mat-error>Check-out cannot be in the past</mat-error>
+              }
             </mat-form-field>
             <div class="md:col-span-2">
-              <button mat-flat-button class="!bg-zinc-900 !text-white" type="button" matStepperNext (click)="loadRooms()">
+              <button mat-flat-button class="!bg-zinc-900 !text-white" type="button" matStepperNext [disabled]="roomsLoading()" (click)="loadRooms()">
                 Find rooms
               </button>
             </div>
@@ -79,7 +98,7 @@ import { Router } from '@angular/router';
             <mat-radio-group class="flex flex-col gap-2 py-4" [formControl]="roomCtrl">
               @for (r of rooms(); track r.id) {
                 <mat-radio-button [value]="r">
-                  {{ r.roomNumber }} · {{ r.type }} · £{{ r.priceOffPeak }} off-peak
+                  {{ r.roomNumber }} · {{ r.type }} · \${{ r.priceOffPeak }} off-peak
                 </mat-radio-button>
               }
             </mat-radio-group>
@@ -94,7 +113,7 @@ import { Router } from '@angular/router';
         <mat-step label="Add-ons">
           <div class="flex flex-col gap-2 py-4">
             @for (s of services(); track s.id) {
-              <mat-checkbox (change)="toggleService(s, $event.checked)">{{ s.name }} — £{{ s.fee }}</mat-checkbox>
+              <mat-checkbox (change)="toggleService(s, $event.checked)">{{ s.name }} — \${{ s.fee }}</mat-checkbox>
             }
           </div>
           <div class="flex justify-between">
@@ -135,6 +154,15 @@ export class BookingWizardComponent {
   private readonly notify = inject(NotificationService);
   private readonly router = inject(Router);
 
+  readonly minDate = new Date();
+
+  readonly dateFilter: DateFilterFn<Date | null> = (d: Date | null) => {
+    if (!d) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return d >= today;
+  };
+
   readonly hotels = signal<HotelSummaryDto[]>([]);
   readonly rooms = signal<RoomDto[]>([]);
   readonly services = signal<AncillaryServiceDto[]>([]);
@@ -161,8 +189,8 @@ export class BookingWizardComponent {
 
   loadRooms(): void {
     const v = this.searchForm.getRawValue();
-    const checkIn = this.toYmd(v.checkIn);
-    const checkOut = this.toYmd(v.checkOut);
+    const checkIn = toYmd(v.checkIn);
+    const checkOut = toYmd(v.checkOut);
     if (checkOut <= checkIn) return;
     this.roomsLoading.set(true);
     this.roomsApi
@@ -178,7 +206,10 @@ export class BookingWizardComponent {
           this.roomCtrl.setValue(null);
           this.roomsLoading.set(false);
         },
-        error: () => this.roomsLoading.set(false),
+        error: (err: { error?: { message?: string } }) => {
+          this.roomsLoading.set(false);
+          this.notify.error(err?.error?.message ?? 'Failed to load available rooms.');
+        },
       });
   }
 
@@ -202,8 +233,8 @@ export class BookingWizardComponent {
     const room = this.roomCtrl.value;
     if (guestId == null || !room) return;
     const v = this.searchForm.getRawValue();
-    const checkIn = this.toYmd(v.checkIn);
-    const checkOut = this.toYmd(v.checkOut);
+    const checkIn = toYmd(v.checkIn);
+    const checkOut = toYmd(v.checkOut);
     const services = [...this.selectedServices().values()].map((s) => ({
       serviceId: s.id,
       quantity: 1,
@@ -226,7 +257,10 @@ export class BookingWizardComponent {
           this.notify.success('Booking confirmed');
           void this.router.navigate(['/app/guest/dashboard']);
         },
-        error: () => this.submitting.set(false),
+        error: (err: { error?: { message?: string } }) => {
+          this.submitting.set(false);
+          this.notify.error(err?.error?.message ?? 'Booking failed. Please try again.');
+        },
       });
   }
 
@@ -236,7 +270,4 @@ export class BookingWizardComponent {
     return dt.toISOString().slice(0, 10);
   }
 
-  private toYmd(d: Date): string {
-    return d.toISOString().slice(0, 10);
-  }
 }

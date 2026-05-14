@@ -37,24 +37,24 @@ import type { InvoiceDto } from '../../../core/models/invoice.models';
       </mat-step>
       <mat-step label="Invoice & extras">
         @if (booking(); as b) {
-          <p class="py-2 text-sm">Guest: {{ b.guestName }} · Balance £{{ b.totalAmount }}</p>
+          <p class="py-2 text-sm">Guest: {{ b.guestName }} · Balance \${{ b.totalAmount }}</p>
         }
         @if (invoice(); as inv) {
           <mat-list>
             @for (line of inv.lineItems; track line.id) {
               <mat-list-item>
                 <span matListItemTitle>{{ line.description }}</span>
-                <span matListItemLine>£{{ line.lineTotal }}</span>
+                <span matListItemLine>\${{ line.lineTotal }}</span>
               </mat-list-item>
             }
           </mat-list>
-          <p class="text-sm font-semibold">Total £{{ inv.totalAmount }}</p>
+          <p class="text-sm font-semibold">Total \${{ inv.totalAmount }}</p>
         } @else {
           <p class="text-sm text-zinc-500">No invoice on file for this booking.</p>
         }
         <form [formGroup]="extrasForm" class="mt-4 space-y-3">
           <mat-form-field appearance="outline" class="w-full max-w-sm">
-            <mat-label>Minibar / services (£)</mat-label>
+            <mat-label>Minibar / services ($)</mat-label>
             <input matInput type="number" formControlName="extras" />
           </mat-form-field>
         </form>
@@ -112,7 +112,10 @@ export class CheckOutFlowComponent {
         this.submitting.set(false);
         this.notify.success('Checked out — receipt emailed (mock)');
       },
-      error: () => this.submitting.set(false),
+      error: (err: { error?: { message?: string } }) => {
+        this.submitting.set(false);
+        this.notify.error(err?.error?.message ?? 'Check-out failed. Please try again.');
+      },
     });
   }
 }

@@ -27,24 +27,34 @@ public class BookingsController : ControllerBase
     /// <summary>Returns a booking by ID (with rooms, services, payments).</summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(BookingDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BookingDto>> GetById(int id)
     {
         var booking = await _bookingService.GetBookingByIdAsync(id);
-        return booking is null ? NotFound($"Booking {id} not found.") : Ok(booking);
+        if (booking is null) return NotFound($"Booking {id} not found.");
+        var callerRole = User.FindFirst("role")?.Value ?? string.Empty;
+        var callerId   = int.TryParse(User.FindFirst("sub")?.Value, out var cid) ? cid : 0;
+        if (callerRole == "Guest" && booking.GuestId != callerId) return Forbid();
+        return Ok(booking);
     }
 
     /// <summary>Returns all bookings for a guest.</summary>
     [HttpGet("guest/{guestId:int}")]
     [ProducesResponseType(typeof(IEnumerable<BookingDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IEnumerable<BookingDto>>> GetByGuest(int guestId)
     {
+        var callerRole = User.FindFirst("role")?.Value ?? string.Empty;
+        var callerId   = int.TryParse(User.FindFirst("sub")?.Value, out var cid) ? cid : 0;
+        if (callerRole == "Guest" && callerId != guestId) return Forbid();
         var bookings = await _bookingService.GetBookingsByGuestAsync(guestId);
         return Ok(bookings);
     }
 
     /// <summary>Returns all bookings for a hotel (staff/manager view).</summary>
     [HttpGet("hotel/{hotelId:int}")]
+    [Authorize(Roles = "FrontDeskStaff,HotelManager,Admin")]
     [ProducesResponseType(typeof(IEnumerable<BookingDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<BookingDto>>> GetByHotel(int hotelId)
     {
@@ -78,28 +88,112 @@ public class BookingsController : ControllerBase
         catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
     }
 
-    /// <summary>Cancels a booking. Cancellation fee rules applied in Phase 5.</summary>
+    /// <summary>
+    /// Updates a Pending or Confirmed booking. Guests may only edit their own bookings.
+    /// </summary>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(BookingDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BookingDto>> Update(int id, [FromBody] UpdateBookingDto dto)
+    {
+        var callerRole = User.FindFirst("role")?.Value ?? string.Empty;
+        var callerId   = int.TryParse(User.FindFirst("sub")?.Value, out var cid) ? cid : 0;
+        // Pass callerId for Guests so service can verify ownership; 0 for staff/admin = bypass
+        var requestingUserId = callerRole == "Guest" ? callerId : 0;
+        try
+        {
+            var booking = await _bookingService.UpdateBookingAsync(id, dto, requestingUserId);
+            return Ok(booking);
+        }
+        catch (KeyNotFoundException ex)        { return NotFound(ex.Message); }
+        catch (UnauthorizedAccessException)    { return Forbid(); }
+        catch (InvalidOperationException ex)   { return BadRequest(ex.Message); }
+    }
+
+    /// <summary>Cancels a booking. Guests may only cancel their own bookings; staff can cancel any.</summary>
     [HttpPost("{id:int}/cancel")]
     [ProducesResponseType(typeof(BookingDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BookingDto>> Cancel(int id)
     {
+        var callerRole = User.FindFirst("role")?.Value ?? string.Empty;
+        var callerId   = int.TryParse(User.FindFirst("sub")?.Value, out var cid) ? cid : 0;
+        // Pass the real caller ID for guests so the service can verify ownership;
+        // pass 0 for staff/admin to skip the ownership check.
+        var requestingUserId = callerRole == "Guest" ? callerId : 0;
         try
         {
-            // requestingUserId will come from JWT claims in Phase 6
-            var booking = await _bookingService.CancelBookingAsync(id, requestingUserId: 0);
+            var booking = await _bookingService.CancelBookingAsync(id, requestingUserId);
             return Ok(booking);
         }
-        catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+        catch (KeyNotFoundException ex)          { return NotFound(ex.Message); }
+        catch (UnauthorizedAccessException)       { return Forbid(); }
+        catch (InvalidOperationException ex)     { return BadRequest(ex.Message); }
+    }
+
+    /// <summary>
+    /// Adds an ancillary service to a Confirmed booking.
+    /// Guests may only modify their own bookings.
+    /// </summary>
+    [HttpPost("{id:int}/services")]
+    [ProducesResponseType(typeof(BookingDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BookingDto>> AddService(int id, [FromBody] AddBookingServiceDto dto)
+    {
+        var callerRole = User.FindFirst("role")?.Value ?? string.Empty;
+        var callerId   = int.TryParse(User.FindFirst("sub")?.Value, out var cid) ? cid : 0;
+        var requestingUserId = callerRole == "Guest" ? callerId : 0;
+        try
+        {
+            var booking = await _bookingService.AddServiceAsync(id, dto, requestingUserId);
+            return Ok(booking);
+        }
+        catch (KeyNotFoundException ex)      { return NotFound(ex.Message); }
+        catch (UnauthorizedAccessException)  { return Forbid(); }
+        catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+    }
+
+    /// <summary>
+    /// Removes an ancillary service from a Confirmed booking.
+    /// </summary>
+    [HttpDelete("{id:int}/services/{serviceId:int}")]
+    [ProducesResponseType(typeof(BookingDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BookingDto>> RemoveService(int id, int serviceId)
+    {
+        var callerRole = User.FindFirst("role")?.Value ?? string.Empty;
+        var callerId   = int.TryParse(User.FindFirst("sub")?.Value, out var cid) ? cid : 0;
+        var requestingUserId = callerRole == "Guest" ? callerId : 0;
+        try
+        {
+            var booking = await _bookingService.RemoveServiceAsync(id, serviceId, requestingUserId);
+            return Ok(booking);
+        }
+        catch (KeyNotFoundException ex)      { return NotFound(ex.Message); }
+        catch (UnauthorizedAccessException)  { return Forbid(); }
         catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
     }
 
     /// <summary>Returns all payments for a booking.</summary>
     [HttpGet("{id:int}/payments")]
     [ProducesResponseType(typeof(IEnumerable<PaymentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<PaymentDto>>> GetPayments(int id)
     {
+        var booking = await _bookingService.GetBookingByIdAsync(id);
+        if (booking is null) return NotFound($"Booking {id} not found.");
+        var callerRole = User.FindFirst("role")?.Value ?? string.Empty;
+        var callerId   = int.TryParse(User.FindFirst("sub")?.Value, out var cid) ? cid : 0;
+        if (callerRole == "Guest" && booking.GuestId != callerId) return Forbid();
         var payments = await _paymentService.GetPaymentsByBookingAsync(id);
         return Ok(payments);
     }
@@ -107,9 +201,15 @@ public class BookingsController : ControllerBase
     /// <summary>Returns the invoice for a booking.</summary>
     [HttpGet("{id:int}/invoice")]
     [ProducesResponseType(typeof(InvoiceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<InvoiceDto>> GetInvoice(int id)
     {
+        var booking = await _bookingService.GetBookingByIdAsync(id);
+        if (booking is null) return NotFound($"Booking {id} not found.");
+        var callerRole = User.FindFirst("role")?.Value ?? string.Empty;
+        var callerId   = int.TryParse(User.FindFirst("sub")?.Value, out var cid) ? cid : 0;
+        if (callerRole == "Guest" && booking.GuestId != callerId) return Forbid();
         var invoice = await _paymentService.GetInvoiceByBookingAsync(id);
         return invoice is null ? NotFound($"No invoice found for booking {id}.") : Ok(invoice);
     }

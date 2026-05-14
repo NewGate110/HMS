@@ -47,9 +47,13 @@ public class BookingRepository : IBookingRepository
                 .ThenInclude(br => br.Room)
             .Include(b => b.BookingServices)
                 .ThenInclude(bs => bs.Service)
+            .Include(b => b.Payments)
             .Where(b => b.HotelId == hotelId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
+
+    public async Task<IEnumerable<Booking>> GetAllAsync() =>
+        await _db.Bookings.ToListAsync();
 
     public async Task AddAsync(Booking booking)
     {

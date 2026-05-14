@@ -34,3 +34,17 @@ export interface CreateBookingDto {
   notes: string;
   guestCount: number;
 }
+
+export interface UpdateBookingDto {
+  checkInDate: string;
+  checkOutDate: string;
+  roomIds: number[];
+  guestCount: number;
+  notes: string;
+}
+
+export interface AddBookingServiceDto {
+  serviceId: number;
+  quantity: number;
+  serviceDate: string;
+}

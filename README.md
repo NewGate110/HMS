@@ -71,24 +71,24 @@ DEFAULT TEST ACCOUNTS
 The database is seeded with the following mock accounts:
 
 Role: Admin
-Email: admin@grandplaza.com
-Password: Admin@1234!
-Name: Admin User
+- Email: admin@grandplaza.com
+- Password: Admin@1234!
+- Name: Admin User
 
 Role: Manager
-Email: manager@grandplaza.com
-Password: Manager@1234!
-Name: Aishath Latheef
+- Email: manager@grandplaza.com
+- Password: Manager@1234!
+- Name: Aishath Latheef
 
 Role: Staff
-Email: staff@grandplaza.com
-Password: Staff@1234!
-Name: Mohamed Shifan
+- Email: staff@grandplaza.com
+- Password: Staff@1234!
+- Name: Mohamed Shifan
 
 Role: Guest
-Email: guest@example.com
-Password: Guest@1234!
-Name: Grace Taylor
+- Email: guest@example.com
+- Password: Guest@1234!
+- Name: Grace Taylor
 
 PROJECT STRUCTURE
 HotelManagementSystem/
@@ -115,3 +115,9 @@ AUTHORS
 - Student Name: [Your Name]
 - Student ID: [Your Student ID]
 - Module: UFCF8S-30-2 Advanced Software Development
+
+
+test user.
+- gmail: s2402165@students.villacollege.edu.mv
+- Password: Ss2401265@1234!
+- Name: Ahmed Taylor

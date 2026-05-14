@@ -107,7 +107,10 @@ export class CheckInFlowComponent {
         this.submitting.set(false);
         this.notify.success('Guest checked in');
       },
-      error: () => this.submitting.set(false),
+      error: (err: { error?: { message?: string } }) => {
+        this.submitting.set(false);
+        this.notify.error(err?.error?.message ?? 'Check-in failed. Please try again.');
+      },
     });
   }
 }

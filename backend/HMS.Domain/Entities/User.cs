@@ -14,6 +14,8 @@ public abstract class User
     public DateTime? LockedUntil { get; set; }
     public DateTime LastPasswordChange { get; set; } = DateTime.UtcNow;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>Soft-deactivation flag. Deactivated accounts cannot log in.</summary>
+    public bool IsActive { get; set; } = true;
 
     public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
 }

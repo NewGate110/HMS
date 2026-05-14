@@ -16,4 +16,17 @@ export class AuthApiService {
   register(body: RegisterGuestRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.base}/register`, body);
   }
+
+  /** Tells the server to clear the HttpOnly auth cookie. */
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.base}/logout`, {});
+  }
+
+  forgotPassword(email: string): Observable<{ message: string; resetToken: string }> {
+    return this.http.post<{ message: string; resetToken: string }>(`${this.base}/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/reset-password`, { token, newPassword });
+  }
 }

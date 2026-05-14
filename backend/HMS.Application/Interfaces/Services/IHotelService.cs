@@ -9,4 +9,5 @@ public interface IHotelService
     Task<IEnumerable<HotelSummaryDto>> GetAllHotelsAsync();
     Task<HotelDto?> GetHotelByIdAsync(int id);
     Task<IEnumerable<RoomDto>> GetRoomsForHotelAsync(int hotelId);
+    Task<HotelDto> UpdateHotelAsync(int id, UpdateHotelDto dto);
 }

@@ -9,6 +9,7 @@ import { MatListModule } from '@angular/material/list';
 import { filter, map } from 'rxjs/operators';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { DialogService } from '../../core/services/dialog.service';
 import { sidebarItemsForRole } from '../../core/constants/nav';
 import type { UserRole } from '../../core/constants/roles';
 import { AppSidebarComponent } from '../../shared/ui/app-sidebar/app-sidebar.component';
@@ -92,7 +93,7 @@ import { ShellFooterComponent } from '../footer/shell-footer.component';
               <app-avatar class="absolute inset-0" [name]="auth.fullName() ?? 'User'"></app-avatar>
             </button>
             <mat-menu #accountMenu="matMenu">
-              <button mat-menu-item type="button" (click)="auth.logout()">Sign out</button>
+              <button mat-menu-item type="button" (click)="confirmLogout()">Sign out</button>
             </mat-menu>
           </div>
         </header>
@@ -136,6 +137,7 @@ import { ShellFooterComponent } from '../footer/shell-footer.component';
 export class DashboardLayoutComponent {
   readonly auth = inject(AuthService);
   readonly theme = inject(ThemeService);
+  private readonly dialog = inject(DialogService);
   private readonly router = inject(Router);
 
   readonly isHandset = toSignal(
@@ -164,6 +166,11 @@ export class DashboardLayoutComponent {
         map(() => this.buildBreadcrumbs()),
       )
       .subscribe((b) => this.breadcrumbs.set(b));
+  }
+
+  confirmLogout(): void {
+    this.dialog.confirm({ title: 'Sign out', message: 'Are you sure you want to sign out?', confirmLabel: 'Sign out' })
+      .subscribe((confirmed) => { if (confirmed) this.auth.logout(); });
   }
 
   private buildBreadcrumbs(): BreadcrumbItem[] {

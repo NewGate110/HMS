@@ -56,11 +56,25 @@ import { MSG } from '../../../core/i18n/ui-messages';
                 </app-button>
               </form>
             } @else {
-              <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-                <p class="text-sm text-emerald-800">
-                  If an account exists for <strong>{{ emailSent() }}</strong>, you will receive
-                  reset instructions shortly.
-                </p>
+              <div class="space-y-3">
+                <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <p class="text-sm text-emerald-800">
+                    If an account exists for <strong>{{ emailSent() }}</strong>, a reset token has
+                    been generated.
+                  </p>
+                </div>
+                @if (devToken()) {
+                  <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+                      Dev mode — reset token
+                    </p>
+                    <code class="block break-all text-xs text-amber-900">{{ devToken() }}</code>
+                    <p class="mt-2 text-xs text-amber-700">
+                      Copy this token and navigate to
+                      <strong>/reset-password?token=&lt;paste here&gt;</strong>
+                    </p>
+                  </div>
+                }
               </div>
             }
           </div>
@@ -82,9 +96,10 @@ export class ForgotPasswordComponent {
   private readonly recovery = inject(PasswordRecoveryService);
 
   readonly msg = MSG.auth;
-  readonly loading = signal(false);
-  readonly done = signal(false);
+  readonly loading  = signal(false);
+  readonly done     = signal(false);
   readonly emailSent = signal('');
+  readonly devToken  = signal('');
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -95,9 +110,10 @@ export class ForgotPasswordComponent {
     this.loading.set(true);
     const email = this.form.controls.email.value;
     this.recovery.requestReset(email).subscribe({
-      next: () => {
+      next: (res) => {
         this.loading.set(false);
         this.emailSent.set(email);
+        this.devToken.set(res.resetToken ?? '');
         this.done.set(true);
       },
       error: () => this.loading.set(false),

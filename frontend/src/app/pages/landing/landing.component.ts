@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { FormatTypePipe } from '../../shared/pipes/format-type.pipe';
 import { HotelsApiService } from '../../core/services/hotels-api.service';
 import { RoomsApiService } from '../../core/services/rooms-api.service';
 import type { RoomSearchResultItem } from '../../core/models/room.models';
@@ -27,7 +28,7 @@ interface Review {
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, FormatTypePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- ─── HERO ─── -->
@@ -223,7 +224,7 @@ interface Review {
                       <span
                         class="inline-block rounded-full bg-cyan-50 px-2.5 py-0.5 text-[11px] font-semibold text-cyan-700"
                       >
-                        {{ formatType(room.type) }}
+                        {{ room.type | formatType }}
                       </span>
                       <p class="mt-2 text-sm font-medium text-zinc-500">
                         {{ room.hotelName }}
@@ -835,10 +836,6 @@ export class LandingComponent implements AfterViewInit {
           this.loading.set(false);
         },
       });
-  }
-
-  formatType(type: string): string {
-    return type.replace(/([A-Z])/g, ' $1').trim();
   }
 
   toggleFaq(i: number): void {

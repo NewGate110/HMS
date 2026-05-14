@@ -40,6 +40,19 @@ public class ReportsController : ControllerBase
     }
 
     /// <summary>
+    /// Returns per-staff booking and check-in/checkout counts for a hotel.
+    /// CSAT and handle-time metrics are not tracked in this system and will show as N/A.
+    /// </summary>
+    [HttpGet("staff-performance")]
+    [ProducesResponseType(typeof(IEnumerable<StaffPerformanceDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<StaffPerformanceDto>>> GetStaffPerformance(
+        [FromQuery] int hotelId)
+    {
+        var report = await _reportService.GetStaffPerformanceAsync(hotelId);
+        return Ok(report);
+    }
+
+    /// <summary>
     /// Returns revenue statistics for a hotel over a date range.
     /// Sums confirmed and checked-out bookings with their total amounts.
     /// </summary>

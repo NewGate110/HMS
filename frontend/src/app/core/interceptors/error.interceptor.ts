@@ -23,7 +23,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((err: unknown) => {
       if (err instanceof HttpErrorResponse) {
-        if (err.status === 401 && tokens.getAccessToken()) {
+        if (err.status === 401 && tokens.session()) {
           tokens.clear();
           void router.navigate(['/login'], {
             queryParams: { returnUrl: router.routerState.snapshot.url },

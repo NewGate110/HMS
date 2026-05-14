@@ -37,4 +37,21 @@ public class HotelService : IHotelService
         var rooms = await _rooms.GetByHotelIdAsync(hotelId);
         return _mapper.Map<IEnumerable<RoomDto>>(rooms);
     }
+
+    public async Task<HotelDto> UpdateHotelAsync(int id, UpdateHotelDto dto)
+    {
+        var hotel = await _hotels.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException($"Hotel {id} not found.");
+
+        hotel.Name     = dto.Name.Trim();
+        hotel.City     = dto.City.Trim();
+        hotel.Country  = dto.Country.Trim();
+        hotel.Address  = dto.Address.Trim();
+        hotel.Phone    = dto.Phone.Trim();
+        hotel.Email    = dto.Email.Trim();
+        hotel.IsActive = dto.IsActive;
+
+        await _hotels.UpdateAsync(hotel);
+        return _mapper.Map<HotelDto>(hotel);
+    }
 }
